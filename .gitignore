@@ -1,0 +1,7 @@
+# Logs & DB 
+*.log
+*.db
+
+
+#Editor
+.vscode/
