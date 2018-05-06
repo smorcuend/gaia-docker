@@ -2,28 +2,29 @@ version: '3'
 
 services:
   influxdb:
-    image: influxdb:1.4.3
+    image: influxdb:1.5.2
     volumes:
       - ./data/influxdb:/var/lib/influxdb
     ports:
       - "8086:8086"
 
   telegraf:
-    image: telegraf:1.5.2
+    image: telegraf:1.6.1
     volumes:
       - ./etc/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     links:
       - influxdb
-      - mqtt
     ports:
       - "8092:8092/udp"
       - "8094:8094"
       - "8125:8125/udp"
-    depends_on:
-      - mqtt
+    # depends_on:
+    #   - mqtt
 
   kapacitor:
-    image: kapacitor:1.4.0
+    image: kapacitor:1.4.1
+    volumes:
+      - ./etc/kapacitor.conf:/etc/kapacitor/kapacitor.conf:ro
     environment:
       KAPACITOR_HOSTNAME: kapacitor
       KAPACITOR_INFLUXDB_0_URLS_0: http://influxdb:8086
@@ -33,7 +34,7 @@ services:
       - "9092:9092"
 
   chronograf:
-    image: chronograf:1.4.1.2
+    image: chronograf:1.4.4.2
     environment:
       INFLUXDB_URL: http://influxdb:8086
       KAPACITOR_URL: http://kapacitor:9092
@@ -60,13 +61,25 @@ services:
     links:
       - kapacitor
 
-  mqtt:
-    image: ansi/mosquitto
-    container_name: mosquitto
-    ports:
-      - "1883:1883/tcp"
-    entrypoint: /usr/local/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
-    volumes:
-      - ./etc/mosquitto:/etc/mosquitto:ro
-      - ./var/log/mosquitto:/var/log/mosquitto:rw
+  # mqtt:
+  #   image: ansi/mosquitto
+  #   #image: openenergy/rpi-mosquitto
+  #   container_name: mosquitto
+  #   ports:
+  #     - "1883:1883/tcp"
+  #   entrypoint: /usr/local/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
+  #   volumes:
+  #     - ./etc/mosquitto:/etc/mosquitto:ro
+  #     - ./var/log/mosquitto:/var/log/mosquitto:rw
 
+  node:
+    image: "node:8"
+    user: "node"
+    working_dir: /home/slimbook/projects/gaia
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./:/home/slimbook/projects/gaia
+    expose:
+      - "8081"
+    command: "npm start"
